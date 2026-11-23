@@ -1,5 +1,5 @@
-#ifndef TYPES_H
-#define TYPES_H
+#ifndef STDTYPES_H
+#define STDTYPES_H
 
 typedef unsigned char uint8_t;
 typedef signed char int8_t;
@@ -10,8 +10,10 @@ typedef signed int int32_t;
 typedef unsigned long long uint64_t;
 typedef signed long long int64_t;
 
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 202301L
 typedef _Bool bool;
 #define true 1
 #define false 0
+#endif
 
 #endif
