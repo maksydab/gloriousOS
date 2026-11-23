@@ -25,7 +25,7 @@ gcc $CFLAGS -c kernel/pit.c -o build/pit.o
 
 gcc $CFLAGS -c drivers/display.c -o build/display.o
 gcc $CFLAGS -c drivers/keyboard.c -o build/keyboard.o
-
+gcc $CFLAGS -c libs/gfs/gfs.c -o build/gfs.o
 gcc $CFLAGS -c kernel/kernel.c -o build/kernel.o
 
 ld -m elf_i386 \
@@ -41,7 +41,7 @@ ld -m elf_i386 \
     build/keyboard.o \
     build/kernel.o
 
-echo "Build successful!"
+echo "build successful!"
 
 # run it glrouiously
 qemu-system-x86_64 -kernel myos.elf
