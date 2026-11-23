@@ -1,7 +1,7 @@
-#include "io.h"
-#include "pic.h"
-#include <stdbool.h>
-#include <stdint.h>
+#include "keyboard.h"
+#include "../kernel/pic.h"
+#include "../libs/util/io.h"
+#include "../libs/util/stdtypes.h"
 
 extern void pic_send_eoi(uint8_t irq);
 extern void print(const char *n, const char *msg, unsigned char stat,
@@ -68,6 +68,5 @@ void keyboard_irq_handler(void) {
 }
 
 void keyboard_init(void) {
-  outb(PIC1_DATA, (uint8_t)~0x03U);
-  outb(PIC2_DATA, 0xFFU);
+  pic_clear_mask(1);
 }

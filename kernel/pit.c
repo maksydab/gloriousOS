@@ -1,7 +1,6 @@
-#include "io.h"
+#include "pit.h"
 #include "pic.h"
-#include <stdint.h>
-
+#include "../libs/util/io.h"
 #define PIT_CHAN0 0x40U
 #define PIT_CMD 0x43U
 #define PIT_BASE_HZ 1193182U
