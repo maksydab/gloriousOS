@@ -5,9 +5,52 @@
 
 #include "../drivers/display.h"
 #include "../drivers/keyboard.h"
+#include "../drivers/disk/ata.h"
+
 
 #include "../libs/util/io.h"
 
+#include "../libs/util/utils.h"
+
+static uint8_t write_buffer[512];
+static uint8_t read_buffer[512];
+
+static void disk_test(void) {
+    print("[DISK] ", "entered disk_test\n", 0x0B, 0x0F);
+
+    memset(write_buffer, 0, sizeof(write_buffer));
+    memset(read_buffer, 0, sizeof(read_buffer));
+
+    print("[DISK] ", "buffers initialized\n", 0x0B, 0x0F);
+
+    const char message[] = "funny file contents here";
+
+    for (uint32_t i = 0; i < sizeof(message); i++) {
+        write_buffer[i] = (uint8_t)message[i];
+    }
+
+    print("[DISK] ", "writing sector...\n", 0x0B, 0x0F);
+
+    if (!ata_write_sector(10, write_buffer)) {
+        print("[DISK] ", "write failed!\n", 0x0C, 0x0F);
+        return;
+    }
+
+    print("[DISK] ", "write completed\n", 0x0A, 0x0F);
+
+    if (!ata_read_sector(10, read_buffer)) {
+        print("[DISK] ", "read failed!\n", 0x0C, 0x0F);
+        return;
+    }
+
+    print("[DISK] ", "read completed\n", 0x0A, 0x0F);
+
+    if (memcmp(write_buffer, read_buffer, 512) == 0) {
+        print("[DISK] ", "read/write successful!\n", 0x0A, 0x0F);
+    } else {
+        print("[DISK] ", "data mismatch!\n", 0x0C, 0x0F);
+    }
+}
 void kmain(void) {
     display_init();
 
@@ -37,7 +80,7 @@ void kmain(void) {
 
     // enables interrupts
     sti();
-
+    // disk_test(); not ready
     uint32_t last_hb = get_ticks();
 
     char ch;
