@@ -108,7 +108,7 @@ echo "[QEMU] disk size: 16MB"
 
 qemu-system-i386 \
     -machine pc \
-    -m 128M \
+    -m 16M \
     -cdrom gloriousOS.iso \
     -boot d \
     -drive file="$DISK",format=raw,if=ide,index=0 \
