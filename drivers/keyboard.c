@@ -52,21 +52,14 @@ void keyboard_irq_handler(void) {
   uint8_t status = inb(KBD_STATUS_PORT);
   if (status & 0x01) {
     uint8_t sc = inb(KBD_DATA_PORT);
-
-    if (sc == 0x2A || sc == 0x36) {
-      shift_held = true;
-    } else if (sc == (0x2A | 0x80) || sc == (0x36 | 0x80)) {
-      shift_held = false;
-    } else if (!(sc & 0x80) && sc < 128) {
+    if (sc == 0x2A || sc == 0x36)      shift_held = true;
+    else if (sc == 0xAA || sc == 0xB6) shift_held = false;
+    else if (!(sc & 0x80) && sc < 128) {
       char c = shift_held ? scancode_shift[sc] : scancode_normal[sc];
-      if (c != 0) {
-        kbd_push_char(c);
-      }
+      if (c != 0) kbd_push_char(c);
     }
   }
-  pic_send_eoi(1);
 }
-
 void keyboard_init(void) {
   pic_clear_mask(1);
 }

@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -7,57 +6,59 @@ mkdir -p build
 DISK=$(mktemp /tmp/glorious-XXXXXX.img)
 truncate -s 16M "$DISK"
 
+ISO_DIR="build/iso"
+
 cleanup() {
     rm -rf build
-    rm -f myos.elf
+    rm -f gloriousos.elf gloriousOS.iso
     rm -f "$DISK"
 }
 
 trap cleanup EXIT
 
-# sie compiler flags
-CFLAGS="-m32 -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -nostdlib -O2 -Wall -Wextra -Ilibs/util -Ikernel -Idrivers -Idrivers/disk -Ilibs/gfs"
+# Compiler flags
+CFLAGS="-m32 -march=i386 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -mno-avx -mno-avx2 \
+        -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -nostdlib \
+        -O2 -Wall -Wextra \
+        -Ilibs/util -Ikernel -Idrivers -Idrivers/disk -Ilibs/gfs"
 
-echo "[BUILD] assembling boots-loader..."
-
+echo "[BUILD] assembling bootloader..."
 as --32 boot/multiboot.s -o build/boot.o
 
-echo "[BUILD] Assembling the assembler..."
-
+echo "[BUILD] assembling IDT..."
 as --32 kernel/idt.s -o build/idt_asm.o
 
 echo "[BUILD] compiling utilities..."
-
 gcc $CFLAGS -c libs/util/utils.c -o build/utils.o
 
-echo "[BUILD] compiling kernel subsystems..."
+echo "[BUILD] compiling logging..."
+# adjust this path if log.c lives elsewhere (e.g. libs/util/log.c or drivers/log.c)
+gcc $CFLAGS -c libs/util/log.c -o build/log.o
 
+echo "[BUILD] compiling kernel subsystems..."
 gcc $CFLAGS -c kernel/idt.c -o build/idt.o
 gcc $CFLAGS -c kernel/pic.c -o build/pic.o
 gcc $CFLAGS -c kernel/pit.c -o build/pit.o
 
 echo "[BUILD] compiling drivers..."
-
 gcc $CFLAGS -c drivers/display.c -o build/display.o
 gcc $CFLAGS -c drivers/keyboard.c -o build/keyboard.o
 gcc $CFLAGS -c drivers/disk/hata.c -o build/ata.o
 
 echo "[BUILD] compiling filesystem..."
-
 gcc $CFLAGS -c libs/gfs/gfs.c -o build/gfs.o
 
-echo "[BUILD] compiling the kernel ..."
-
+echo "[BUILD] compiling kernel..."
 gcc $CFLAGS -c kernel/kernel.c -o build/kernel.o
 
-echo "[BUILD] linking it..."
-
-ld -m elf_i386 \
+echo "[BUILD] linking kernel..."
+ld -m elf_i386 -z max-page-size=0x1000 \
     -T kernel/linker.ld \
-    -o myos.elf \
+    -o gloriousos.elf \
     build/boot.o \
     build/idt_asm.o \
     build/utils.o \
+    build/log.o \
     build/idt.o \
     build/pic.o \
     build/pit.o \
@@ -67,11 +68,52 @@ ld -m elf_i386 \
     build/gfs.o \
     build/kernel.o
 
-echo "[BUILD] build was successful!"
-echo "[QEMU] launching gloriousOS..."
-echo "[QEMU] temp disk $DISK"
-echo "[QEMU] disc size: 16MB"
+echo "[CHECK] validating Multiboot header..."
 
-qemu-system-x86_64 \
-    -kernel myos.elf \
-    -drive file="$DISK",format=raw,if=ide,index=0
+if grub-file --is-x86-multiboot gloriousos.elf; then
+    echo "[CHECK] Multiboot header is valid!"
+else
+    echo "[ERROR] Multiboot header validation FAILED!"
+    echo "[ERROR] grub-file returned exit code $?"
+    echo "[DEBUG] ELF details:"
+    readelf -h gloriousos.elf
+    echo "[DEBUG] Multiboot section:"
+    readelf -S gloriousos.elf | grep -E 'multiboot|text'
+    exit 1
+fi
+
+echo "[BUILD] preparing ISO structure..."
+
+mkdir -p "$ISO_DIR/boot/grub"
+cp gloriousos.elf "$ISO_DIR/boot/gloriousos.elf"
+
+cat > "$ISO_DIR/boot/grub/grub.cfg" << 'EOF'
+set timeout=0
+set default=0
+
+menuentry "GloriousOS" {
+    multiboot /boot/gloriousos.elf
+    boot
+}
+EOF
+
+echo "[BUILD] generating bootable GRUB ISO..."
+grub-mkrescue -o gloriousOS.iso "$ISO_DIR"
+
+echo "[BUILD] ISO successfully created!"
+echo "[QEMU] launching gloriousOS..."
+echo "[QEMU] booting from GRUB ISO"
+echo "[QEMU] temp disk: $DISK"
+echo "[QEMU] disk size: 16MB"
+
+qemu-system-i386 \
+    -machine pc \
+    -m 128M \
+    -cdrom gloriousOS.iso \
+    -boot d \
+    -drive file="$DISK",format=raw,if=ide,index=0 \
+    -serial stdio \
+    -monitor none \
+    -no-reboot \
+    -no-shutdown \
+    -d int,cpu_reset -D /tmp/qemu.log

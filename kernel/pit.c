@@ -26,7 +26,6 @@ void pit_init(uint32_t freq_hz) {
 
 void pit_irq_handler(void) {
   ticks++;
-  pic_send_eoi(0);
 }
 
 uint32_t get_ticks(void) { return ticks; }
