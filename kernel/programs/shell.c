@@ -40,18 +40,35 @@ bool shell_init(void) {
 
     return true;
 }
-void shell_execute(){
-    if (string_compare_cstr(&buf, "echo")==0){
-        print("\n","hi",0x0F,0x0F);
-        log_str("[ECHO] echoing\n");
-    }else if (string_compare_cstr(&buf, "fetch")==0){
-        log_str("[shell] started fetch\n");
-        program_start(fetch);
-    }else{
-        print("\n","error: command not found",0x0F,0x04);
+
+void shell_execute() {
+    char *argv[MAX_ARGS];
+    int argc = 0;
+    char *input = buf.data;
+    char *token = strtok(input, " ");
+    while (token != NULL && argc < MAX_ARGS) {
+        argv[argc++] = token;
+        token = strtok(NULL, " ");
+    }
+    if (argc == 0)
+        return;
+    ProgramArgs args = {
+        .argc = argc
+    };
+    for (int i = 0; i < argc; i++)
+        args.argv[i] = argv[i];
+    if (strcmp(argv[0], "echo") == 0) {
+        for (int i = 1; i < argc; i++) {
+            print("", argv[i], 0x0F, 0x0F);
+            print("", " ", 0x0F, 0x0F);
+        }
+    } else if (strcmp(argv[0], "fetch") == 0) {
+        program_start(fetch, args);
+
+    } else {
+        print("\n", "error: command not found", 0x0F, 0x04);
     }
     print("\n>>> ", "", 0x0E, 0x0F);
-
     promptposx = get_cursor_x();
     promptposy = get_cursor_y();
     string_init(&buf, 256);

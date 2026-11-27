@@ -2,8 +2,7 @@
 #include "../drivers/keyboard.h"
 #include "../libs/util/log.h"
 ProgramBuffer pro_buffer = {0};
-
-
+ProgramArgs empty_args;
 // program handling helpers
 
 void  _add_program(ProgramBuffer *buffer, Program program) {
@@ -27,10 +26,14 @@ bool _remove_program(ProgramBuffer *buffer, unsigned int index) {
 void program_current_kill(){
     _remove_program(&pro_buffer, pro_buffer.count-1);
 }
-void program_start(Program pr){
+void program_start(Program pr, ProgramArgs args) {
     log_str("[programs] started a program\n");
+
     _add_program(&pro_buffer, pr);
-    programs_init();
+
+    if (pro_buffer.count > 0) {
+        pr.init(args);
+    }
 }
 void programs_update(){
     if (pro_buffer.count>0){
@@ -43,9 +46,9 @@ void programs_input(KeyEvent k){
     }
 }
 void programs_init(){
-
+    
     if (pro_buffer.count>0){
-        pro_buffer.programs[pro_buffer.count-1].init();
+        pro_buffer.programs[pro_buffer.count-1].init(empty_args);
     }
 }
 void pr_empty_update(){
@@ -54,6 +57,9 @@ void pr_empty_update(){
 void pr_empty_input(KeyEvent k){
     return;
 }
-void pr_empty_init(){
+void pr_empty_init(ProgramArgs args) {
     return;
+}
+ProgramArgs pr_get_empty_args(){
+    return empty_args;
 }

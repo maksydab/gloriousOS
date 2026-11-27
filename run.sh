@@ -33,7 +33,7 @@ echo "[BUILD] compiling utilities..."
 gcc $CFLAGS -c libs/util/utils.c -o build/utils.o
 gcc $CFLAGS -c libs/util/stdtypes.c -o build/stdtypes.o
 gcc $CFLAGS -c libs/util/log.c -o build/log.o
-
+gcc $CFLAGS -c libs/util/info.c -o build/info.o
 echo "[BUILD] compiling kernel subsystems..."
 gcc $CFLAGS -c kernel/idt.c -o build/idt.o
 gcc $CFLAGS -c kernel/pic.c -o build/pic.o
@@ -78,6 +78,7 @@ ld -m elf_i386 -z max-page-size=0x1000 \
     build/utils.o \
     build/stdtypes.o \
     build/log.o \
+    build/info.o \
     build/idt.o \
     build/pic.o \
     build/pit.o \

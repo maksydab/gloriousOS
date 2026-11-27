@@ -128,7 +128,7 @@ void kmain(void)
     //shell_init(true);
     log_str("[boot] main loop\n");
     programs_init();
-    program_start(shell);
+    program_start(shell, pr_get_empty_args());
     for (;;) {
         while (kbd_pop_event(&event)) {
             //print("", one_char, 0x0F, 0x0F);
