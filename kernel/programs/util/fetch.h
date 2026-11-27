@@ -3,6 +3,6 @@
 #define GLORIOUS_FETCH_PRO_H
 #include "../../../kernel/programs.h"
 
-bool fetch_init(void);
+bool fetch_init(ProgramArgs);
 
 #endif

@@ -22,7 +22,7 @@ int promptposx=0;
 int promptposy=0;
 int longest=0;
 
-bool shell_init(void) {
+bool shell_init(ProgramArgs args) {
     log_str("[shell] starting shell\n");
     vis = true;
 
@@ -45,33 +45,54 @@ void shell_execute() {
     char *argv[MAX_ARGS];
     int argc = 0;
     char *input = buf.data;
-    char *token = strtok(input, " ");
-    while (token != NULL && argc < MAX_ARGS) {
-        argv[argc++] = token;
-        token = strtok(NULL, " ");
+    size_t len = string_length(&buf);
+    size_t i = 0;
+    while (i < len && argc < MAX_ARGS) {
+        while (i < len && input[i] == ' ')
+            i++;
+        if (i >= len)
+            break;
+        argv[argc++] = &input[i];
+        while (i < len && input[i] != ' ')
+            i++;
+        if (i < len)
+            input[i++] = '\0';
     }
+
     if (argc == 0)
-        return;
+        goto cleanup;
+
     ProgramArgs args = {
         .argc = argc
     };
+
     for (int i = 0; i < argc; i++)
         args.argv[i] = argv[i];
-    if (strcmp(argv[0], "echo") == 0) {
+    if (string_compare_cstr(&(String){.data = argv[0], .len = 4}, "echo") == 0) {
+        print("\n", "", 0x0F, 0x04);
         for (int i = 1; i < argc; i++) {
             print("", argv[i], 0x0F, 0x0F);
-            print("", " ", 0x0F, 0x0F);
+            if (i < argc - 1)
+                print("", " ", 0x0F, 0x0F);
         }
-    } else if (strcmp(argv[0], "fetch") == 0) {
+        log_str("[ECHO] echoing\n");
+    } else if (string_compare_cstr(&(String){.data = argv[0], .len = 5}, "fetch") == 0) {
+        log_str("[shell] started fetch\n");
         program_start(fetch, args);
-
     } else {
         print("\n", "error: command not found", 0x0F, 0x04);
     }
+
+cleanup:
     print("\n>>> ", "", 0x0E, 0x0F);
+
     promptposx = get_cursor_x();
     promptposy = get_cursor_y();
-    string_init(&buf, 256);
+
+    string_clear(&buf);
+
+    cursorpo = 0;
+    longest = 0;
 }
 void shell_input(KeyEvent event) {
     switch (event.code) {
