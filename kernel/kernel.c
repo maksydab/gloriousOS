@@ -12,8 +12,14 @@
 #include "../libs/util/log.h"
 #include "programs/shell.h"
 #include "programs.h"
+
 static uint8_t write_buffer[ATA_SECTOR_SIZE];
 static uint8_t read_buffer[ATA_SECTOR_SIZE];
+static Program shell = {
+    .input = shell_input,
+    .update = shell_run,
+    .init = shell_init,
+};
 
 // for testing if the disc works
 static void disk_test(void)
@@ -115,25 +121,20 @@ void kmain(void)
 
     uint32_t last_hb = get_ticks();
     KeyEvent event;
-    char ch;
-    char one_char[2] = {0, 0};
+
 
     log_str("[boot] launching shell\n");
-    Program current_program = {
-        .init = shell_init,
-        .input = shell_input,
-        .update = shell_run,
-    };
+
     //shell_init(true);
     log_str("[boot] main loop\n");
-    current_program.init();
+    programs_init();
+    program_start(shell);
     for (;;) {
         while (kbd_pop_event(&event)) {
-            one_char[0] = ch;
             //print("", one_char, 0x0F, 0x0F);
-            current_program.input(event);
+            programs_input(event);
         }
-
+        programs_update();
         uint32_t now = get_ticks();
         if ((uint32_t)(now - last_hb) >= 5000U) {
             last_hb = now;

@@ -4,6 +4,15 @@
 #include "../../libs/util/utils.h"
 #include "../../libs/util/log.h"
 #include "shell.h"
+#include "../programs.h"
+
+// declare programs that are able to be invoked using shell
+#include "util/fetch.h"
+static Program fetch = {
+    .init = fetch_init,
+    .input = pr_empty_input,
+    .update = pr_empty_update,
+};
 
 bool vis = true;
 String buf;
@@ -12,6 +21,7 @@ int cursorpo=0;
 int promptposx=0;
 int promptposy=0;
 int longest=0;
+
 bool shell_init(void) {
     log_str("[shell] starting shell\n");
     vis = true;
@@ -34,6 +44,9 @@ void shell_execute(){
     if (string_compare_cstr(&buf, "echo")==0){
         print("\n","hi",0x0F,0x0F);
         log_str("[ECHO] echoing\n");
+    }else if (string_compare_cstr(&buf, "fetch")==0){
+        log_str("[shell] started fetch\n");
+        program_start(fetch);
     }else{
         print("\n","error: command not found",0x0F,0x04);
     }

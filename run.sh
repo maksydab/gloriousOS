@@ -38,6 +38,7 @@ echo "[BUILD] compiling kernel subsystems..."
 gcc $CFLAGS -c kernel/idt.c -o build/idt.o
 gcc $CFLAGS -c kernel/pic.c -o build/pic.o
 gcc $CFLAGS -c kernel/pit.c -o build/pit.o
+gcc $CFLAGS -c kernel/programs.c -o build/programs.o
 
 echo "[BUILD] compiling drivers..."
 gcc $CFLAGS -c drivers/display.c -o build/display.o
@@ -47,7 +48,23 @@ gcc $CFLAGS -c drivers/disk/hata.c -o build/ata.o
 echo "[BUILD] compiling filesystem..."
 gcc $CFLAGS -c libs/gfs/gfs.c -o build/gfs.o
 echo "[BUILD] compiling programs..."
-gcc $CFLAGS -c kernel/programs/shell.c -o build/shell.o
+PROGRAMS_DIR="kernel/programs"
+PROGRAMS_BUILD_DIR="build/programs"
+mkdir -p "$PROGRAMS_BUILD_DIR"
+
+PROGRAM_OBJECTS=()
+
+while IFS= read -r -d '' file; do
+    relative="${file#"$PROGRAMS_DIR"/}"
+    object="$PROGRAMS_BUILD_DIR/${relative%.c}.o"
+    mkdir -p "$(dirname "$object")"
+    echo "[BUILD] compiling program: $file"
+    gcc $CFLAGS -c "$file" -o "$object"
+    PROGRAM_OBJECTS+=("$object")
+
+done < <(find "$PROGRAMS_DIR" -type f -name "*.c" -print0)
+
+echo "[BUILD] compiled ${#PROGRAM_OBJECTS[@]} program files"
 echo "[BUILD] compiling kernel..."
 gcc $CFLAGS -c kernel/kernel.c -o build/kernel.o
 
@@ -64,13 +81,13 @@ ld -m elf_i386 -z max-page-size=0x1000 \
     build/idt.o \
     build/pic.o \
     build/pit.o \
+    build/programs.o \
     build/display.o \
     build/keyboard.o \
     build/ata.o \
     build/gfs.o \
-    build/shell.o \
-    build/kernel.o
-
+    build/kernel.o \
+    "${PROGRAM_OBJECTS[@]}"
 echo "[CHECK] validating Multiboot header..."
 
 if grub-file --is-x86-multiboot gloriousos.elf; then

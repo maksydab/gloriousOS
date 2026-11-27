@@ -15,5 +15,14 @@ typedef struct {
     Program programs[MAX_PROGRAMS];
     unsigned int count;
 } ProgramBuffer;
+void program_current_kill();
+void program_start(Program pr);
+void programs_update();
+void programs_input(KeyEvent k);
+void programs_init();
 
+// util functions if a program doesn't need that branch
+void pr_empty_init();
+void pr_empty_input(KeyEvent k);
+void pr_empty_update();
 #endif
