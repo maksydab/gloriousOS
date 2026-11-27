@@ -10,13 +10,13 @@ ISO_DIR="build/iso"
 
 cleanup() {
     rm -rf build
-    rm -f gloriousos.elf gloriousOS.iso
+    rm -f gloriousos.elf
     rm -f "$DISK"
 }
 
 trap cleanup EXIT
 
-# Compiler flags
+# compiler flags
 CFLAGS="-m32 -march=i386 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -mno-avx -mno-avx2 \
         -ffreestanding -fno-builtin -fno-stack-protector -fno-pie -nostdlib \
         -O2 -Wall -Wextra \
@@ -27,12 +27,11 @@ as --32 boot/multiboot.s -o build/boot.o
 
 echo "[BUILD] assembling IDT..."
 as --32 kernel/idt.s -o build/idt_asm.o
-
+echo "[BUILD] compiling mm.."
+gcc $CFLAGS -c libs/mm/heap.c -o build/heap.o
 echo "[BUILD] compiling utilities..."
 gcc $CFLAGS -c libs/util/utils.c -o build/utils.o
-
-echo "[BUILD] compiling logging..."
-# adjust this path if log.c lives elsewhere (e.g. libs/util/log.c or drivers/log.c)
+gcc $CFLAGS -c libs/util/stdtypes.c -o build/stdtypes.o
 gcc $CFLAGS -c libs/util/log.c -o build/log.o
 
 echo "[BUILD] compiling kernel subsystems..."
@@ -47,7 +46,8 @@ gcc $CFLAGS -c drivers/disk/hata.c -o build/ata.o
 
 echo "[BUILD] compiling filesystem..."
 gcc $CFLAGS -c libs/gfs/gfs.c -o build/gfs.o
-
+echo "[BUILD] compiling programs..."
+gcc $CFLAGS -c kernel/programs/shell.c -o build/shell.o
 echo "[BUILD] compiling kernel..."
 gcc $CFLAGS -c kernel/kernel.c -o build/kernel.o
 
@@ -57,7 +57,9 @@ ld -m elf_i386 -z max-page-size=0x1000 \
     -o gloriousos.elf \
     build/boot.o \
     build/idt_asm.o \
+    build/heap.o \
     build/utils.o \
+    build/stdtypes.o \
     build/log.o \
     build/idt.o \
     build/pic.o \
@@ -66,6 +68,7 @@ ld -m elf_i386 -z max-page-size=0x1000 \
     build/keyboard.o \
     build/ata.o \
     build/gfs.o \
+    build/shell.o \
     build/kernel.o
 
 echo "[CHECK] validating Multiboot header..."
